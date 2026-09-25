@@ -1,5 +1,7 @@
-from pydantic import BaseModel, EmailStr, Field
+from datetime import datetime
 from typing import Optional
+
+from pydantic import BaseModel, EmailStr, Field
 
 
 class LeadCreate(BaseModel):
@@ -23,3 +25,8 @@ class LeadCreate(BaseModel):
 
 class LeadResponse(LeadCreate):
     id: str
+
+    salesforce_lead_id: Optional[str] = None
+    sync_status: str
+    sync_error: Optional[str] = None
+    synced_at: Optional[datetime] = None

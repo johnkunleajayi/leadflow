@@ -36,8 +36,75 @@ class Lead(Base):
 
     rating: Mapped[str | None] = mapped_column(String(50), nullable=True)
 
+    salesforce_lead_id: Mapped[str | None] = mapped_column(
+        String(18),
+        nullable=True,
+        unique=True,
+        index=True,
+    )
+
+    sync_status: Mapped[str] = mapped_column(
+        String(50),
+        nullable=False,
+        default="Pending",
+    )
+
+    sync_error: Mapped[str | None] = mapped_column(
+        Text,
+        nullable=True,
+    )
+
+    synced_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+    )
+
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         nullable=False,
         default=lambda: datetime.now(timezone.utc),
+    )
+
+
+class SalesforceConnection(Base):
+    __tablename__ = "salesforce_connections"
+
+    id: Mapped[int] = mapped_column(
+        Integer,
+        primary_key=True,
+        index=True,
+    )
+
+    access_token: Mapped[str] = mapped_column(
+        Text,
+        nullable=False,
+    )
+
+    refresh_token: Mapped[str | None] = mapped_column(
+        Text,
+        nullable=True,
+    )
+
+    instance_url: Mapped[str] = mapped_column(
+        String(500),
+        nullable=False,
+    )
+
+    token_type: Mapped[str] = mapped_column(
+        String(50),
+        nullable=False,
+        default="Bearer",
+    )
+
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        default=lambda: datetime.now(timezone.utc),
+    )
+
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
     )
