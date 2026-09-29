@@ -1,14 +1,269 @@
 import { useCallback, useState } from 'react'
 import QRScanner from './QRScanner'
+import BusinessCardScanner from './BusinessCardScanner'
 
 function ScanCapture() {
   const [showQRScanner, setShowQRScanner] = useState(false)
-  const [scannedValue, setScannedValue] = useState(null)
+  const [showBusinessCardScanner, setShowBusinessCardScanner] = useState(false)
+  const [scannedResult, setScannedResult] = useState(null)
+  const [businessCardResult, setBusinessCardResult] = useState(null)
 
-  const handleQRScan = useCallback((value) => {
-    setScannedValue(value)
+  const handleQRScan = useCallback((result) => {
+    setScannedResult(result)
     setShowQRScanner(false)
   }, [])
+
+  const handleBusinessCardScan = useCallback((result) => {
+    setBusinessCardResult(result)
+    setShowBusinessCardScanner(false)
+  }, [])
+
+  function renderCapturedResult() {
+    if (!scannedResult) {
+      return null
+    }
+
+    const { type, rawValue, contact } = scannedResult
+
+    if (type === 'vcard' && contact) {
+      return (
+        <div className="mt-6 rounded-2xl border border-emerald-500/20 bg-emerald-500/5 p-5">
+          <div className="flex items-start gap-3">
+            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-400">
+              ✓
+            </span>
+
+            <div className="min-w-0 flex-1">
+              <p className="font-semibold text-white">
+                Contact captured
+              </p>
+
+              <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                <div>
+                  <p className="text-xs font-medium uppercase tracking-wider text-slate-500">
+                    Name
+                  </p>
+
+                  <p className="mt-1 text-sm text-white">
+                    {[contact.first_name, contact.last_name]
+                      .filter(Boolean)
+                      .join(' ') || 'Not provided'}
+                  </p>
+                </div>
+
+                <div>
+                  <p className="text-xs font-medium uppercase tracking-wider text-slate-500">
+                    Company
+                  </p>
+
+                  <p className="mt-1 text-sm text-white">
+                    {contact.company || 'Not provided'}
+                  </p>
+                </div>
+
+                <div>
+                  <p className="text-xs font-medium uppercase tracking-wider text-slate-500">
+                    Email
+                  </p>
+
+                  <p className="mt-1 break-all text-sm text-white">
+                    {contact.email || 'Not provided'}
+                  </p>
+                </div>
+
+                <div>
+                  <p className="text-xs font-medium uppercase tracking-wider text-slate-500">
+                    Phone
+                  </p>
+
+                  <p className="mt-1 text-sm text-white">
+                    {contact.phone || 'Not provided'}
+                  </p>
+                </div>
+
+                <div>
+                  <p className="text-xs font-medium uppercase tracking-wider text-slate-500">
+                    Title
+                  </p>
+
+                  <p className="mt-1 text-sm text-white">
+                    {contact.title || 'Not provided'}
+                  </p>
+                </div>
+
+                <div>
+                  <p className="text-xs font-medium uppercase tracking-wider text-slate-500">
+                    LinkedIn
+                  </p>
+
+                  <p className="mt-1 break-all text-sm text-white">
+                    {contact.linkedin_url || 'Not provided'}
+                  </p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                className="mt-5 rounded-xl bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-indigo-500"
+              >
+                Create Lead
+              </button>
+            </div>
+          </div>
+        </div>
+      )
+    }
+
+    if (type === 'url') {
+      return (
+        <div className="mt-6 rounded-2xl border border-emerald-500/20 bg-emerald-500/5 p-5">
+          <div className="flex items-start gap-3">
+            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-400">
+              ✓
+            </span>
+
+            <div className="min-w-0">
+              <p className="font-semibold text-white">
+                QR code captured
+              </p>
+
+              <p className="mt-1 text-sm text-slate-400">
+                This QR code contains a URL rather than contact information.
+              </p>
+
+              <a
+                href={rawValue}
+                target="_blank"
+                rel="noreferrer"
+                className="mt-3 block break-all text-sm font-medium text-indigo-400 hover:text-indigo-300"
+              >
+                {rawValue}
+              </a>
+            </div>
+          </div>
+        </div>
+      )
+    }
+
+    return (
+      <div className="mt-6 rounded-2xl border border-emerald-500/20 bg-emerald-500/5 p-5">
+        <div className="flex items-start gap-3">
+          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-400">
+            ✓
+          </span>
+
+          <div className="min-w-0">
+            <p className="font-semibold text-white">
+              QR code captured
+            </p>
+
+            <p className="mt-1 break-all text-sm text-slate-400">
+              {rawValue}
+            </p>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  function renderBusinessCardResult() {
+    if (!businessCardResult) {
+      return null
+    }
+
+    const contact = businessCardResult.contact || businessCardResult
+
+    return (
+      <div className="mt-6 rounded-2xl border border-emerald-500/20 bg-emerald-500/5 p-5">
+        <div className="flex items-start gap-3">
+          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-400">
+            ✓
+          </span>
+
+          <div className="min-w-0 flex-1">
+            <p className="font-semibold text-white">
+              Business card captured
+            </p>
+
+            <p className="mt-1 text-sm text-slate-400">
+              Contact information extracted from the business card.
+            </p>
+
+            <div className="mt-4 grid gap-3 sm:grid-cols-2">
+              <div>
+                <p className="text-xs font-medium uppercase tracking-wider text-slate-500">
+                  Name
+                </p>
+
+                <p className="mt-1 text-sm text-white">
+                  {[contact.first_name, contact.last_name]
+                    .filter(Boolean)
+                    .join(' ') || 'Not provided'}
+                </p>
+              </div>
+
+              <div>
+                <p className="text-xs font-medium uppercase tracking-wider text-slate-500">
+                  Company
+                </p>
+
+                <p className="mt-1 text-sm text-white">
+                  {contact.company || 'Not provided'}
+                </p>
+              </div>
+
+              <div>
+                <p className="text-xs font-medium uppercase tracking-wider text-slate-500">
+                  Email
+                </p>
+
+                <p className="mt-1 break-all text-sm text-white">
+                  {contact.email || 'Not provided'}
+                </p>
+              </div>
+
+              <div>
+                <p className="text-xs font-medium uppercase tracking-wider text-slate-500">
+                  Phone
+                </p>
+
+                <p className="mt-1 text-sm text-white">
+                  {contact.phone || 'Not provided'}
+                </p>
+              </div>
+
+              <div>
+                <p className="text-xs font-medium uppercase tracking-wider text-slate-500">
+                  Title
+                </p>
+
+                <p className="mt-1 text-sm text-white">
+                  {contact.title || 'Not provided'}
+                </p>
+              </div>
+
+              <div>
+                <p className="text-xs font-medium uppercase tracking-wider text-slate-500">
+                  LinkedIn
+                </p>
+
+                <p className="mt-1 break-all text-sm text-white">
+                  {contact.linkedin_url || 'Not provided'}
+                </p>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              className="mt-5 rounded-xl bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-indigo-500"
+            >
+              Create Lead
+            </button>
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <>
@@ -34,7 +289,7 @@ function ScanCapture() {
               <button
                 type="button"
                 onClick={() => {
-                  setScannedValue(null)
+                  setScannedResult(null)
                   setShowQRScanner(true)
                 }}
                 className="group rounded-2xl border border-indigo-500/30 bg-indigo-500/10 p-6 text-left transition hover:border-indigo-400/60 hover:bg-indigo-500/15"
@@ -62,6 +317,10 @@ function ScanCapture() {
 
               <button
                 type="button"
+                onClick={() => {
+                  setBusinessCardResult(null)
+                  setShowBusinessCardScanner(true)
+                }}
                 className="group rounded-2xl border border-slate-700 bg-slate-950/60 p-6 text-left transition hover:border-slate-500 hover:bg-slate-950"
               >
                 <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-800 text-3xl">
@@ -86,25 +345,9 @@ function ScanCapture() {
               </button>
             </div>
 
-            {scannedValue && (
-              <div className="mt-6 rounded-2xl border border-emerald-500/20 bg-emerald-500/5 p-5">
-                <div className="flex items-start gap-3">
-                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-400">
-                    ✓
-                  </span>
+            {renderCapturedResult()}
 
-                  <div className="min-w-0">
-                    <p className="font-semibold text-white">
-                      QR code captured
-                    </p>
-
-                    <p className="mt-1 break-all text-sm text-slate-400">
-                      {scannedValue}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            )}
+            {renderBusinessCardResult()}
 
             <div className="mt-6 flex flex-col items-start gap-3 border-t border-slate-800 pt-6 sm:flex-row sm:items-center sm:justify-between">
               <div>
@@ -133,6 +376,13 @@ function ScanCapture() {
         <QRScanner
           onClose={() => setShowQRScanner(false)}
           onScan={handleQRScan}
+        />
+      )}
+
+      {showBusinessCardScanner && (
+        <BusinessCardScanner
+          onClose={() => setShowBusinessCardScanner(false)}
+          onScan={handleBusinessCardScan}
         />
       )}
     </>

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import QrScanner from 'qr-scanner'
+import { parseQRValue } from '../services/qrParser'
 
 function QRScanner({ onClose, onScan }) {
   const videoRef = useRef(null)
@@ -20,6 +21,7 @@ function QRScanner({ onClose, onScan }) {
       try {
         setError(null)
         setStarting(true)
+        scannedRef.current = false
 
         const scanner = new QrScanner(
           videoRef.current,
@@ -28,27 +30,56 @@ function QRScanner({ onClose, onScan }) {
               return
             }
 
-            scannedRef.current = true
-
             const value =
               typeof result === 'string'
                 ? result
                 : result?.data
 
             if (!value) {
-              scannedRef.current = false
               return
             }
 
+            const parsedResult = parseQRValue(value)
+
+            scannedRef.current = true
+
             scanner.stop()
-            onScan(value)
+            onScan(parsedResult)
           },
           {
             preferredCamera: 'environment',
+
             highlightScanRegion: false,
             highlightCodeOutline: false,
+
             returnDetailedScanResult: true,
-            maxScansPerSecond: 10,
+
+            maxScansPerSecond: 15,
+
+            calculateScanRegion: (video) => {
+              const width = video.videoWidth
+              const height = video.videoHeight
+
+              if (!width || !height) {
+                return {
+                  x: 0,
+                  y: 0,
+                  width: 0,
+                  height: 0,
+                  downScaledWidth: 0,
+                  downScaledHeight: 0,
+                }
+              }
+
+              return {
+                x: 0,
+                y: 0,
+                width,
+                height,
+                downScaledWidth: 1000,
+                downScaledHeight: 1000,
+              }
+            },
           },
         )
 
@@ -173,8 +204,8 @@ function QRScanner({ onClose, onScan }) {
             </p>
 
             <p className="mt-1 text-xs leading-5 text-slate-500">
-              Keep the code inside the frame. LeadFlow will capture it
-              automatically.
+              Keep the entire QR code visible and reasonably close to the
+              camera. LeadFlow supports dense QR codes such as vCards.
             </p>
           </div>
         </div>
