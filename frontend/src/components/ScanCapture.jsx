@@ -14,6 +14,12 @@ function ScanCapture() {
   }, [])
 
   const handleBusinessCardScan = useCallback((result) => {
+    console.log('LEADFLOW FINAL BUSINESS CARD RESULT:')
+    console.log(JSON.stringify(result, null, 2))
+
+    console.log('LEADFLOW FINAL CONTACT:')
+    console.log(JSON.stringify(result?.contact, null, 2))
+
     setBusinessCardResult(result)
     setShowBusinessCardScanner(false)
   }, [])
@@ -171,7 +177,30 @@ function ScanCapture() {
       return null
     }
 
-    const contact = businessCardResult.contact || businessCardResult
+    const contact = businessCardResult.contact
+
+    if (!contact) {
+      return (
+        <div className="mt-6 rounded-2xl border border-amber-500/20 bg-amber-500/5 p-5">
+          <div className="flex items-start gap-3">
+            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-amber-500/10 text-amber-400">
+              !
+            </span>
+
+            <div className="min-w-0 flex-1">
+              <p className="font-semibold text-white">
+                Business card captured
+              </p>
+
+              <p className="mt-1 text-sm leading-6 text-slate-400">
+                The OCR service returned a response, but no structured contact
+                information was found.
+              </p>
+            </div>
+          </div>
+        </div>
+      )
+    }
 
     return (
       <div className="mt-6 rounded-2xl border border-emerald-500/20 bg-emerald-500/5 p-5">
