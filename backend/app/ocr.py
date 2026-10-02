@@ -1,5 +1,7 @@
 import io
+import os
 import re
+import shutil
 from typing import Any
 
 import cv2
@@ -8,9 +10,40 @@ import pytesseract
 from PIL import Image
 
 
-TESSERACT_PATH = r"C:\Program Files\Tesseract-OCR\tesseract.exe"
+def find_tesseract() -> str | None:
+    """
+    Find the Tesseract executable.
 
-pytesseract.pytesseract.tesseract_cmd = TESSERACT_PATH
+    Priority:
+    1. TESSERACT_CMD environment variable
+    2. System PATH (Linux/Render/macOS/Windows)
+    3. Standard Windows installation path
+    """
+
+    environment_path = os.getenv("TESSERACT_CMD")
+
+    if environment_path:
+        return environment_path
+
+    system_path = shutil.which("tesseract")
+
+    if system_path:
+        return system_path
+
+    windows_path = (
+        r"C:\Program Files\Tesseract-OCR\tesseract.exe"
+    )
+
+    if os.path.exists(windows_path):
+        return windows_path
+
+    return None
+
+
+TESSERACT_PATH = find_tesseract()
+
+if TESSERACT_PATH:
+    pytesseract.pytesseract.tesseract_cmd = TESSERACT_PATH
 
 
 def get_tesseract_version() -> str | None:
@@ -42,7 +75,8 @@ def get_ocr_status() -> dict[str, Any]:
         "version": None,
         "error": (
             "Tesseract OCR is not available. "
-            f"Expected executable at: {TESSERACT_PATH}"
+            "Install Tesseract or set the "
+            "TESSERACT_CMD environment variable."
         ),
     }
 

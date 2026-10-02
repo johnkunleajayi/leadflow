@@ -1,6 +1,8 @@
 import hashlib
 import io
 import re
+import os
+import shutil
 from base64 import urlsafe_b64encode
 
 import pytesseract
@@ -36,9 +38,19 @@ from app.schemas import LeadCreate, LeadResponse
 from app.sync import sync_lead_to_salesforce
 
 
-TESSERACT_PATH = r"C:\Program Files\Tesseract-OCR\tesseract.exe"
+TESSERACT_PATH = os.getenv("TESSERACT_CMD")
 
-pytesseract.pytesseract.tesseract_cmd = TESSERACT_PATH
+if not TESSERACT_PATH:
+    TESSERACT_PATH = shutil.which("tesseract")
+
+if not TESSERACT_PATH:
+    windows_tesseract = r"C:\Program Files\Tesseract-OCR\tesseract.exe"
+
+    if os.path.exists(windows_tesseract):
+        TESSERACT_PATH = windows_tesseract
+
+if TESSERACT_PATH:
+    pytesseract.pytesseract.tesseract_cmd = TESSERACT_PATH
 
 
 Base.metadata.create_all(bind=engine)
