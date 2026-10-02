@@ -16,7 +16,7 @@ from fastapi import (
 )
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import RedirectResponse
-from PIL import Image, ImageEnhance, ImageOps
+from PIL import Image, ImageOps
 from sqlalchemy.orm import Session
 
 from app.database import engine, get_db
@@ -424,12 +424,12 @@ def extract_business_card(text: str) -> dict:
     }
 
 
+
 def prepare_ocr_variants(
     image: Image.Image,
 ) -> list[tuple[str, Image.Image]]:
     """
-    Create OCR-safe image variants without destroying
-    fine business-card text.
+    Create two OCR-safe variants for low-resource hosting.
     """
 
     image = ImageOps.exif_transpose(image)
@@ -437,65 +437,42 @@ def prepare_ocr_variants(
     if image.mode != "RGB":
         image = image.convert("RGB")
 
-    variants = [
+    grayscale = ImageOps.grayscale(image)
+
+    return [
         (
             "original",
             image,
         ),
-    ]
-
-    grayscale = ImageOps.grayscale(
-        image
-    )
-
-    variants.append(
-        (
-            "grayscale",
-            grayscale,
-        )
-    )
-
-    variants.append(
         (
             "autocontrast",
-            ImageOps.autocontrast(
-                grayscale
-            ),
-        )
-    )
-
-    contrast = ImageEnhance.Contrast(
-        grayscale
-    ).enhance(1.2)
-
-    variants.append(
-        (
-            "contrast",
-            contrast,
-        )
-    )
-
-    return variants
+            ImageOps.autocontrast(grayscale),
+        ),
+    ]
 
 
 def run_tesseract(
     image: Image.Image,
     psm: int = 3,
 ) -> tuple[str, list[dict], float]:
-    """Run Tesseract and return text, OCR items, and confidence."""
+    """
+    Run one Tesseract process with a hard timeout.
+    """
 
     config = f"--oem 3 --psm {psm}"
 
-    raw_text = pytesseract.image_to_string(
-        image,
-        config=config,
-    )
+    try:
+        data = pytesseract.image_to_data(
+            image,
+            config=config,
+            output_type=pytesseract.Output.DICT,
+            timeout=15,
+        )
 
-    data = pytesseract.image_to_data(
-        image,
-        config=config,
-        output_type=pytesseract.Output.DICT,
-    )
+    except RuntimeError as exc:
+        raise RuntimeError(
+            "Tesseract OCR timed out while reading the business card."
+        ) from exc
 
     groups: dict[tuple, dict] = {}
 
@@ -529,11 +506,11 @@ def run_tesseract(
     for index, value in enumerate(
         text_values
     ):
-        text = str(
+        word = str(
             value or ""
         ).strip()
 
-        if not text:
+        if not word:
             continue
 
         try:
@@ -543,6 +520,7 @@ def run_tesseract(
                     confidence_values[index]
                 ),
             )
+
         except (
             ValueError,
             TypeError,
@@ -567,7 +545,7 @@ def run_tesseract(
             }
 
         groups[key]["texts"].append(
-            text
+            word
         )
 
         groups[key]["confidences"].append(
@@ -576,8 +554,10 @@ def run_tesseract(
 
     items = []
 
+    raw_lines = []
+
     for group in groups.values():
-        text = " ".join(
+        line_text = " ".join(
             group["texts"]
         ).strip()
 
@@ -585,8 +565,12 @@ def run_tesseract(
             "confidences"
         ]
 
-        if not text:
+        if not line_text:
             continue
+
+        raw_lines.append(
+            line_text
+        )
 
         score = (
             sum(confidences)
@@ -597,7 +581,7 @@ def run_tesseract(
 
         items.append(
             {
-                "text": text,
+                "text": line_text,
                 "score": round(
                     score / 100,
                     4,
@@ -610,6 +594,10 @@ def run_tesseract(
         / len(all_confidences)
         if all_confidences
         else 0.0
+    )
+
+    raw_text = "\n".join(
+        raw_lines
     )
 
     return (
@@ -670,57 +658,58 @@ def run_best_orientation_ocr(
     image: Image.Image,
 ) -> tuple[str, list[dict], float, int]:
     """
-    Run OCR across orientations and safe
-    preprocessing variants.
+    Run lightweight OCR for the landscape
+    business-card capture.
+
+    Only normal orientation is evaluated.
+    Original and autocontrast variants are
+    compared.
     """
 
     candidates = []
 
-    for angle in (
-        0,
-        90,
-        180,
-        270,
+    for (
+        variant_name,
+        prepared,
+    ) in prepare_ocr_variants(
+        image
     ):
-        rotated = image.rotate(
-            angle,
-            expand=True,
+        (
+            raw_text,
+            items,
+            confidence,
+        ) = run_tesseract(
+            prepared,
+            psm=3,
         )
 
-        for (
-            variant_name,
-            prepared,
-        ) in prepare_ocr_variants(
-            rotated
-        ):
-            (
-                raw_text,
-                items,
-                confidence,
-            ) = run_tesseract(
-                prepared,
-                psm=3,
-            )
+        (
+            score,
+            contact,
+        ) = score_ocr_candidate(
+            raw_text,
+            confidence,
+        )
 
-            (
-                score,
-                contact,
-            ) = score_ocr_candidate(
-                raw_text,
-                confidence,
-            )
+        candidates.append(
+            {
+                "angle": 0,
+                "variant": variant_name,
+                "text": raw_text,
+                "items": items,
+                "confidence": confidence,
+                "score": score,
+                "contact": contact,
+            }
+        )
 
-            candidates.append(
-                {
-                    "angle": angle,
-                    "variant": variant_name,
-                    "text": raw_text,
-                    "items": items,
-                    "confidence": confidence,
-                    "score": score,
-                    "contact": contact,
-                }
-            )
+    if not candidates:
+        return (
+            "",
+            [],
+            0.0,
+            0,
+        )
 
     best = max(
         candidates,
@@ -735,6 +724,8 @@ def run_best_orientation_ocr(
         best["confidence"],
         best["angle"],
     )
+
+
 
 
 @app.get("/")
