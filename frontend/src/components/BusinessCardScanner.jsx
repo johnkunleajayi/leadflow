@@ -228,7 +228,7 @@ function BusinessCardScanner({ onClose, onScan }) {
     /*
      * Preserve enough resolution for Tesseract.
      */
-    const maxWidth = 2560
+    const maxWidth = 1920
 
     const scale =
       cropWidth > maxWidth
