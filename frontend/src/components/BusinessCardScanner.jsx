@@ -31,10 +31,10 @@ function BusinessCardScanner({ onClose, onScan }) {
                 ideal: 'environment',
               },
               width: {
-                ideal: 1920,
+                ideal: 3840,
               },
               height: {
-                ideal: 1080,
+                ideal: 2160,
               },
             },
             audio: false,
@@ -228,7 +228,7 @@ function BusinessCardScanner({ onClose, onScan }) {
     /*
      * Preserve enough resolution for Tesseract.
      */
-    const maxWidth = 1800
+    const maxWidth = 2560
 
     const scale =
       cropWidth > maxWidth
