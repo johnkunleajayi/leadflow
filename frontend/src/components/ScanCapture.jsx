@@ -1,8 +1,9 @@
 import { useCallback, useState } from 'react'
+
 import QRScanner from './QRScanner'
 import BusinessCardScanner from './BusinessCardScanner'
 
-function ScanCapture() {
+function ScanCapture({ onCreateLead }) {
   const [showQRScanner, setShowQRScanner] = useState(false)
   const [showBusinessCardScanner, setShowBusinessCardScanner] = useState(false)
   const [scannedResult, setScannedResult] = useState(null)
@@ -23,6 +24,12 @@ function ScanCapture() {
     setBusinessCardResult(result)
     setShowBusinessCardScanner(false)
   }, [])
+
+  function continueWithContact(contact, captureSource) {
+    if (typeof onCreateLead === 'function') {
+      onCreateLead(contact, captureSource)
+    }
+  }
 
   function renderCapturedResult() {
     if (!scannedResult) {
@@ -110,9 +117,10 @@ function ScanCapture() {
 
               <button
                 type="button"
+                onClick={() => continueWithContact(contact, 'QR Code')}
                 className="mt-5 rounded-xl bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-indigo-500"
               >
-                Create Lead
+                Continue to Lead Details
               </button>
             </div>
           </div>
@@ -284,9 +292,10 @@ function ScanCapture() {
 
             <button
               type="button"
+              onClick={() => continueWithContact(contact, 'Business Card')}
               className="mt-5 rounded-xl bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-indigo-500"
             >
-              Create Lead
+              Continue to Lead Details
             </button>
           </div>
         </div>
@@ -392,6 +401,7 @@ function ScanCapture() {
 
               <button
                 type="button"
+                onClick={() => continueWithContact({}, 'Manual')}
                 className="rounded-xl border border-slate-700 px-5 py-2.5 text-sm font-semibold text-slate-300 transition hover:border-slate-500 hover:text-white"
               >
                 Enter Manually

@@ -1,7 +1,29 @@
+import { useState } from 'react'
+
+import LeadCaptureForm from '../components/LeadCaptureForm'
 import SalesforceStatus from '../components/SalesforceStatus'
 import ScanCapture from '../components/ScanCapture'
 
 function Dashboard() {
+  const [leadDraft, setLeadDraft] = useState(null)
+
+  function handleCreateLead(contact = {}, captureSource = 'Manual') {
+    setLeadDraft({
+      ...contact,
+      capture_source: captureSource,
+    })
+
+    window.setTimeout(() => {
+      document
+        .getElementById('lead-capture-form')
+        ?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }, 0)
+  }
+
+  function handleCancelLead() {
+    setLeadDraft(null)
+  }
+
   return (
     <main className="min-h-screen bg-slate-950">
       <div className="mx-auto max-w-7xl px-6 py-10">
@@ -26,7 +48,16 @@ function Dashboard() {
           </div>
         </header>
 
-        <ScanCapture />
+        <ScanCapture onCreateLead={handleCreateLead} />
+
+        {leadDraft && (
+          <section id="lead-capture-form" className="mt-10 scroll-mt-6">
+            <LeadCaptureForm
+              initialData={leadDraft}
+              onCancel={handleCancelLead}
+            />
+          </section>
+        )}
       </div>
     </main>
   )
