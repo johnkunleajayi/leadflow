@@ -30,3 +30,4 @@ class LeadResponse(LeadCreate):
     sync_status: str
     sync_error: Optional[str] = None
     synced_at: Optional[datetime] = None
+    created_at: datetime

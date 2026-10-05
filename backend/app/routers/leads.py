@@ -35,6 +35,7 @@ def lead_to_response(lead: Lead) -> dict:
         "sync_status": lead.sync_status,
         "sync_error": lead.sync_error,
         "synced_at": lead.synced_at,
+        "created_at": lead.created_at,
     }
 
 

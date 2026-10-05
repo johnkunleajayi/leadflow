@@ -1,11 +1,13 @@
 import { useState } from 'react'
 
 import LeadCaptureForm from '../components/LeadCaptureForm'
+import LeadList from '../components/LeadList'
 import SalesforceStatus from '../components/SalesforceStatus'
 import ScanCapture from '../components/ScanCapture'
 
 function Dashboard() {
   const [leadDraft, setLeadDraft] = useState(null)
+  const [leadRefreshKey, setLeadRefreshKey] = useState(0)
 
   function handleCreateLead(contact = {}, captureSource = 'Manual') {
     setLeadDraft({
@@ -22,6 +24,10 @@ function Dashboard() {
 
   function handleCancelLead() {
     setLeadDraft(null)
+  }
+
+  function handleLeadCreated() {
+    setLeadRefreshKey((current) => current + 1)
   }
 
   return (
@@ -55,9 +61,14 @@ function Dashboard() {
             <LeadCaptureForm
               initialData={leadDraft}
               onCancel={handleCancelLead}
+              onLeadCreated={handleLeadCreated}
             />
           </section>
         )}
+
+        <div id="captured-leads" className="scroll-mt-6">
+          <LeadList refreshKey={leadRefreshKey} />
+        </div>
       </div>
     </main>
   )

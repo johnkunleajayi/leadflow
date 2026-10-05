@@ -40,7 +40,11 @@ function buildInitialForm(initialData) {
   }
 }
 
-function LeadCaptureForm({ initialData, onCancel }) {
+function LeadCaptureForm({
+  initialData,
+  onCancel,
+  onLeadCreated,
+}) {
   const [form, setForm] = useState(() => buildInitialForm(initialData))
   const [submitting, setSubmitting] = useState(false)
   const [result, setResult] = useState(null)
@@ -66,6 +70,10 @@ function LeadCaptureForm({ initialData, onCancel }) {
       const data = await createLead(form)
 
       setResult(data)
+
+      if (typeof onLeadCreated === 'function') {
+        onLeadCreated(data)
+      }
     } catch (err) {
       setError(
         err instanceof Error
