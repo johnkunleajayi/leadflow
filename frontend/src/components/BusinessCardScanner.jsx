@@ -391,7 +391,7 @@ function BusinessCardScanner({ onClose, onScan }) {
 
       if (
         !result?.contact ||
-        !result?.rawText
+        !result?.raw_text
       ) {
         throw new Error(
           'LeadFlow could not detect readable text on this business card. Please position the entire card inside the frame, improve the lighting, and try again.',
