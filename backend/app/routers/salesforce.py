@@ -65,7 +65,9 @@ def salesforce_status(
 
 
 @router.get("/login")
-def salesforce_login():
+def salesforce_login(
+    db: Session = Depends(get_db),
+):
     state = generate_state()
 
     code_verifier = generate_pkce_verifier()
@@ -81,6 +83,7 @@ def salesforce_login():
     )
 
     create_oauth_session(
+        db=db,
         state=state,
         code_verifier=code_verifier,
     )
@@ -126,7 +129,10 @@ def salesforce_callback(
             ),
         )
 
-    oauth_session = get_oauth_session(state)
+    oauth_session = get_oauth_session(
+        db=db,
+        state=state,
+    )
 
     if oauth_session is None:
         raise HTTPException(
@@ -180,7 +186,10 @@ def salesforce_callback(
         )
 
     finally:
-        remove_oauth_session(state)
+        remove_oauth_session(
+            db=db,
+            state=state,
+        )
 
     return {
         "message": (

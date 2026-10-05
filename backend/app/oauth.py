@@ -1,41 +1,54 @@
 import secrets
-from dataclasses import dataclass
 from datetime import datetime, timezone
 
 from sqlalchemy.orm import Session
 
-from app.models import SalesforceConnection
-
-
-@dataclass
-class OAuthSession:
-    state: str
-    code_verifier: str
-
-
-_sessions: dict[str, OAuthSession] = {}
+from app.models import (
+    SalesforceConnection,
+    SalesforceOAuthSession,
+)
 
 
 def create_oauth_session(
+    db: Session,
     state: str,
     code_verifier: str,
-) -> None:
-    _sessions[state] = OAuthSession(
+) -> SalesforceOAuthSession:
+    oauth_session = SalesforceOAuthSession(
         state=state,
         code_verifier=code_verifier,
     )
 
+    db.add(oauth_session)
+    db.commit()
+    db.refresh(oauth_session)
+
+    return oauth_session
+
 
 def get_oauth_session(
+    db: Session,
     state: str,
-) -> OAuthSession | None:
-    return _sessions.get(state)
+) -> SalesforceOAuthSession | None:
+    return (
+        db.query(SalesforceOAuthSession)
+        .filter(SalesforceOAuthSession.state == state)
+        .first()
+    )
 
 
 def remove_oauth_session(
+    db: Session,
     state: str,
 ) -> None:
-    _sessions.pop(state, None)
+    oauth_session = get_oauth_session(
+        db=db,
+        state=state,
+    )
+
+    if oauth_session is not None:
+        db.delete(oauth_session)
+        db.commit()
 
 
 def generate_state() -> str:
